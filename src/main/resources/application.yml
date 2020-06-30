@@ -1,0 +1,55 @@
+server:
+  port: 8082
+
+spring:
+  datasource:
+    url: jdbc:postgresql://localhost:5433/payment
+    username: admin
+    password: admin
+    driver-class-name: org.postgresql.Driver
+    hikari:
+      connection-test-query: select 1
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+        format_sql: true
+        show_sql: true
+        use_sql_comments: true
+        jdbc:
+          lob:
+            non_contextual_creation: true
+  cloud:
+    stream:
+      kafka:
+        binder:
+          autoCreateTopics: true
+          brokers: localhost:9092
+          configuration:
+            value:
+              deserializer: io.confluent.kafka.serializers.KafkaAvroDeserializer
+              serializer: io.confluent.kafka.serializers.KafkaAvroSerializer
+            key:
+              deserializer: io.confluent.kafka.serializers.KafkaAvroDeserializer
+              serializer: io.confluent.kafka.serializers.KafkaAvroSerializer
+      bindings:
+        checkout-created-input:
+          destination: streaming.ecommerce.checkout.created
+          contentType: application/*+avro
+          group: ${spring.application.name}
+          consumer:
+            use-native-decoding: true
+        payment-paid-output:
+          destination: streaming.ecommerce.payment.paid
+          contentType: application/*+avro
+          producer:
+            use-native-encoding: true
+  kafka:
+    properties:
+      schema:
+        registry:
+          url: http://localhost:8081
+  application:
+    name: payment-api
